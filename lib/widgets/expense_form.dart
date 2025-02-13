@@ -6,23 +6,34 @@ import '../constants/icons.dart';
 import '../models/expense.dart';
 
 class ExpenseForm extends StatefulWidget {
-  const ExpenseForm({super.key});
-
+  ExpenseForm({super.key, this.oldExp, this.isEdit = false});
+  final Expense? oldExp;
+  final bool isEdit;
   @override
   State<ExpenseForm> createState() => _ExpenseFormState();
 }
 
 class _ExpenseFormState extends State<ExpenseForm> {
-  final _title = TextEditingController();
-  final _amount = TextEditingController();
+  final _titleController = TextEditingController();
+  final _amountController = TextEditingController();
   DateTime? _date;
-  String _initialValue = 'Other';
+  String _initialCategory = 'Other';
 
-  //
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isEdit && widget.oldExp != null) {
+      _titleController.text = widget.oldExp!.title;
+      _amountController.text = widget.oldExp!.amount.toString();
+      _date = widget.oldExp!.date;
+      _initialCategory = widget.oldExp!.category;
+    }
+  }
+
   _pickDate() async {
     DateTime? pickedDate = await showDatePicker(
         context: context,
-        initialDate: DateTime.now(),
+        initialDate: _date ?? DateTime.now(),
         firstDate: DateTime(2022),
         lastDate: DateTime.now());
 
@@ -33,7 +44,6 @@ class _ExpenseFormState extends State<ExpenseForm> {
     }
   }
 
-  //
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DatabaseProvider>(context, listen: false);
@@ -45,7 +55,7 @@ class _ExpenseFormState extends State<ExpenseForm> {
           children: [
             // title
             TextField(
-              controller: _title,
+              controller: _titleController,
               decoration: const InputDecoration(
                 labelText: 'Title of expense',
               ),
@@ -53,7 +63,7 @@ class _ExpenseFormState extends State<ExpenseForm> {
             const SizedBox(height: 20.0),
             // amount
             TextField(
-              controller: _amount,
+              controller: _amountController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Amount of expense',
@@ -69,7 +79,7 @@ class _ExpenseFormState extends State<ExpenseForm> {
                       : 'Select Date'),
                 ),
                 IconButton(
-                  onPressed: () => _pickDate(),
+                  onPressed: _pickDate,
                   icon: const Icon(Icons.calendar_month),
                 ),
               ],
@@ -89,10 +99,10 @@ class _ExpenseFormState extends State<ExpenseForm> {
                           ),
                         )
                         .toList(),
-                    value: _initialValue,
+                    value: _initialCategory,
                     onChanged: (newValue) {
                       setState(() {
-                        _initialValue = newValue!;
+                        _initialCategory = newValue!;
                       });
                     },
                   ),
@@ -102,23 +112,31 @@ class _ExpenseFormState extends State<ExpenseForm> {
             const SizedBox(height: 20.0),
             ElevatedButton.icon(
               onPressed: () {
-                if (_title.text != '' && _amount.text != '') {
-                  // create an expense
-                  final file = Expense(
-                    id: 0,
-                    title: _title.text,
-                    amount: double.parse(_amount.text),
-                    date: _date != null ? _date! : DateTime.now(),
-                    category: _initialValue,
+                if (_titleController.text != '' &&
+                    _amountController.text != '') {
+                  final newExpense = Expense(
+                    id: widget.isEdit && widget.oldExp != null
+                        ? widget.oldExp!.id
+                        : 0,
+                    title: _titleController.text,
+                    amount: double.parse(_amountController.text),
+                    date: _date ?? DateTime.now(),
+                    category: _initialCategory,
                   );
-                  // add it to database.
-                  provider.addExpense(file);
-                  // close the bottomsheet
-                  Navigator.of(context).pop();
+
+                  if (widget.isEdit && widget.oldExp != null) {
+                    // update the existing expense
+                    provider.editExpense(newExpense);
+                  } else {
+                    // create a new expense
+                    provider.addExpense(newExpense);
+                  }
+
+                  Navigator.of(context).pop(); // close the bottom sheet
                 }
               },
-              icon: const Icon(Icons.add),
-              label: const Text('Add Expense'),
+              icon: Icon(widget.isEdit ? Icons.edit : Icons.add),
+              label: Text(widget.isEdit ? 'Edit Expense' : 'Add Expense'),
             ),
           ],
         ),

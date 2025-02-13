@@ -13,6 +13,7 @@ class ExpenseList extends StatelessWidget {
         var exList = db.expenses;
         return exList.isNotEmpty
             ? ListView.builder(
+              
                 itemCount: exList.length,
                 itemBuilder: (_, i) => ExpenseCard(exList[i]))
             : const Center(

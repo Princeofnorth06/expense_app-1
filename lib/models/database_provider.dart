@@ -251,4 +251,61 @@ class DatabaseProvider with ChangeNotifier {
     // return the list
     return data;
   }
+
+  Future<void> editExpense(Expense updatedExp) async {
+    final db = await database;
+
+    // Find the old expense in the in-memory list
+    final oldExp =
+        _expenses.firstWhere((element) => element.id == updatedExp.id);
+
+    await db.transaction((txn) async {
+      await txn.update(
+        eTable,
+        updatedExp.toMap(),
+        where: 'id == ?',
+        whereArgs: [updatedExp.id],
+      ).then((_) {
+        // Remove the old expense from the in-memory list
+        _expenses.removeWhere((element) => element.id == updatedExp.id);
+
+        // Add the updated expense to the in-memory list
+        _expenses.add(updatedExp);
+
+        // Notify listeners about the changes
+        notifyListeners();
+
+        // Handle category or amount changes
+        if (oldExp.category != updatedExp.category) {
+          // The category has changed, update both old and new categories
+
+          // Update the old category: Decrease entries and total amount
+          var oldCategory = findCategory(oldExp.category);
+          updateCategory(
+            oldExp.category,
+            oldCategory.entries - 1,
+            oldCategory.totalAmount - oldExp.amount,
+          );
+
+          // Update the new category: Increase entries and total amount
+          var newCategory = findCategory(updatedExp.category);
+          updateCategory(
+            updatedExp.category,
+            newCategory.entries + 1,
+            newCategory.totalAmount + updatedExp.amount,
+          );
+        } else if (oldExp.amount != updatedExp.amount) {
+          // The category is the same but the amount has changed, only update the total amount
+          var category = findCategory(oldExp.category);
+          updateCategory(
+            oldExp.category,
+            category.entries, // Entries remain the same
+            category.totalAmount -
+                oldExp.amount +
+                updatedExp.amount, // Update amount
+          );
+        }
+      });
+    });
+  }
 }

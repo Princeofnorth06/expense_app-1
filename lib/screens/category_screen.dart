@@ -17,7 +17,7 @@ class CategoryScreen extends StatelessWidget {
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
-            builder: (_) => const ExpenseForm(),
+            builder: (_) =>  ExpenseForm(),
           );
         },
         child: const Icon(Icons.add),

@@ -30,7 +30,7 @@ class _TotalChartState extends State<TotalChart> {
                   fit: BoxFit.scaleDown,
                   child: Text(
                     'Total Expenses: ${NumberFormat.currency(locale: 'en_IN', symbol: '₹').format(total)}',
-                    textScaleFactor: 1.5,
+                    textScaler: const TextScaler.linear(1.5),
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
@@ -54,7 +54,7 @@ class _TotalChartState extends State<TotalChart> {
                         const SizedBox(width: 5.0),
                         Text(total == 0
                             ? '0%'
-                            : '${((e.totalAmount / total) * 100).toStringAsFixed(2)}%'),
+                            : '${((e.totalAmount / total) * 100).toStringAsFixed(0)}%'),
                       ],
                     ),
                   ),
@@ -67,6 +67,7 @@ class _TotalChartState extends State<TotalChart> {
             child: PieChart(
               PieChartData(
                 centerSpaceRadius: 20.0,
+                //sectionsSpace: 5,
                 sections: total != 0
                     ? list
                         .map(
